@@ -1,0 +1,81 @@
+(* --------- Channels ----------*)
+free ChSec:channel [private]. (*secure channel between ATSU1,AC and ATSU2*)
+free ChPub:channel. 	(*public channel between between ATSU1,AC and ATSU2*)
+
+
+free IDa :bitstring.
+free SK :bitstring [private].
+free di :bitstring [private].
+free Ri:bitstring.
+free K : bitstring.
+type spkey.
+type sskey.
+free IDi:bitstring.
+
+
+(*====free Mos : bitstring [private].===*)
+(*========Constructors=======*)
+fun h(bitstring):bitstring [data].
+fun mecc(bitstring,bitstring):bitstring [data].
+fun Concat(bitstring,bitstring):bitstring.
+fun add(bitstring,bitstring):bitstring.
+fun enc(bitstring,bitstring): bitstring.
+fun dec(bitstring,bitstring): bitstring.
+fun sign(bitstring,bitstring): bitstring.
+
+
+
+(*======Equations=======*)
+
+equation forall x: bitstring, y: bitstring; dec(enc(x,y),y) = x.
+equation forall x: bitstring, y: bitstring; enc(dec(x,y),y) = x.
+equation forall x: bitstring, y: bitstring; add(add(x,y),y) = x.
+equation forall x: bitstring, y: bitstring; Concat(Concat(x,y),y) = x.
+
+
+(*-------queries------*)
+
+
+query attacker(SK).
+query attacker(IDa).
+
+
+query id:bitstring; inj-event(end_ATSU1(K)) ==> inj-event(start_ATSU1(K)).
+
+
+
+(*=====*Events*=====*)
+event start_ATSU1(bitstring).
+event end_ATSU1(bitstring).
+
+
+let  pATSU1=
+
+in(ChPub,(Ra:bitstring,IDa:bitstring,Ka:bitstring,sa:bitstring));
+new ri:bitstring;
+new ra:bitstring;
+new G:bitstring;
+new da:bitstring;
+new LTi:bitstring;
+new LTa:bitstring;
+new IDcai:bitstring;
+new Certi:bitstring;
+new Certa:bitstring;
+new Qa:bitstring;
+new di:bitstring;
+let Ri=mecc(ri,G) in 
+let s=add(di,Concat(ri,h(Concat(IDi,(Certi,LTi,IDcai))))) in
+
+
+event start_ATSU1(K);
+out(ChPub, (IDi,Certi,LTi,IDcai,Ri,s));
+in(ChPub, (Ra:bitstring,IDa:bitstring,Ka:bitstring,sa:bitstring));
+let Ki= Concat(ri,Ra) in
+if h(Ki)=h(Ka) then
+let IDa=dec(IDa,Ki) in
+if mecc(sa,G) =add(Ra,h(Concat(Qa,(K,IDa,Certa,LTa)))) then
+event end_ATSU1(K)
+else
+0.
+
+process ((!pATSU1) )
