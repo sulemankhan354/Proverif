@@ -3,11 +3,12 @@ free ChSec:channel [private]. (*secure channel between ATSU1,AC and ATSU2*)
 free ChPub:channel. 	(*public channel between between ATSU1,AC and ATSU2*)
 
 
-free IDa :bitstring.
+free IDa :bitstring [private].
 free SK :bitstring [private].
 free di :bitstring [private].
+free da :bitstring [private].
 free Ri:bitstring.
-free K : bitstring.
+free K : bitstring [private].
 type spkey.
 type sskey.
 free IDi:bitstring.
@@ -25,6 +26,8 @@ fun sign(bitstring,bitstring): bitstring.
 
 
 
+
+
 (*======Equations=======*)
 
 equation forall x: bitstring, y: bitstring; dec(enc(x,y),y) = x.
@@ -33,20 +36,27 @@ equation forall x: bitstring, y: bitstring; add(add(x,y),y) = x.
 equation forall x: bitstring, y: bitstring; Concat(Concat(x,y),y) = x.
 
 
+
+
 (*-------queries------*)
 
 
 query attacker(SK).
+query attacker(IDi).
 query attacker(IDa).
 
 
-query id:bitstring; inj-event(end_ATSU1(K)) ==> inj-event(start_ATSU1(K)).
+query id:bitstring; inj-event(end_ATSU1(IDi)) ==> inj-event(start_ATSU1(IDi)).
+query id:bitstring; inj-event(end_AC(IDa)) ==> inj-event(start_AC(IDa)).
 
 
 
 (*=====*Events*=====*)
 event start_ATSU1(bitstring).
 event end_ATSU1(bitstring).
+event start_AC(bitstring).
+event end_AC(bitstring).
+
 
 
 let  pATSU1=
@@ -78,4 +88,36 @@ event end_ATSU1(K)
 else
 0.
 
-process ((!pATSU1) )
+let  pAC=
+event start_AC(IDa);
+
+in(ChPub, (ID:bitstring,certqi:bitstring,LTi:bitstring,IDcai:bitstring,Ri:bitstring,s:bitstring));
+new ri:bitstring;
+new ra:bitstring;
+new K:bitstring;
+new da:bitstring;
+new LTi:bitstring;
+new LTa:bitstring;
+new IDcai:bitstring;
+new Certi:bitstring;
+new Certa:bitstring;
+new Qa:bitstring;
+new Qcai:bitstring;
+new Qca:bitstring;
+new IDi:bitstring;
+new di:bitstring;
+new G:bitstring;
+new IDca:bitstring;
+let Qi=add(Qcai,Concat(ri,h(Concat(Certi,h(Concat(IDi,(Certi,LTi))))))) in
+if mecc(s,G)=add(Qi,Concat(Ri,h(Concat(IDi,(Certi,LTi,IDcai))))) then
+if IDcai=IDca then
+let Ra=mecc(ra,G) in 
+let K= Concat(ra,Ri) in
+let sa=add(ra,Concat(da,h(Concat(K,IDa)))) in
+out(ChPub, (Ra,enc(IDa,K),h(K),sa));
+event end_AC(IDa)
+else
+0.
+
+
+process ((!pATSU1) | (!pAC) )
